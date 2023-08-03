@@ -131,10 +131,10 @@ enum voltage_change_dir {
 };
 
 struct cpr_fuse {
-	char *ring_osc;
-	char *init_voltage;
-	char *quotient;
-	char *quotient_offset;
+	const char *ring_osc;
+	const char *init_voltage;
+	const char *quotient;
+	const char *quotient_offset;
 };
 
 struct fuse_corner_data {
@@ -155,7 +155,7 @@ struct fuse_corner_data {
 struct cpr_fuses {
 	int init_voltage_step;
 	int init_voltage_width;
-	struct fuse_corner_data *fuse_corner_data;
+	const struct fuse_corner_data *fuse_corner_data;
 };
 
 struct corner_data {
@@ -166,7 +166,7 @@ struct corner_data {
 struct cpr_desc {
 	unsigned int num_fuse_corners;
 	int min_diff_quot;
-	int *step_quot;
+	const int *step_quot;
 
 	unsigned int		timer_delay_us;
 	unsigned int		timer_cons_up;
@@ -188,9 +188,9 @@ struct acc_desc {
 	unsigned int	enable_reg;
 	u32		enable_mask;
 
-	struct reg_sequence	*config;
-	struct reg_sequence	*settings;
-	int			num_regs_per_fuse;
+	const struct reg_sequence	*config;
+	const struct reg_sequence	*settings;
+	int				num_regs_per_fuse;
 };
 
 struct cpr_acc_desc {
@@ -848,7 +848,7 @@ static int cpr_fuse_corner_init(struct cpr_drv *drv)
 	const struct acc_desc *acc_desc = drv->acc_desc;
 	int i;
 	unsigned int step_volt;
-	struct fuse_corner_data *fdata;
+	const struct fuse_corner_data *fdata;
 	struct fuse_corner *fuse, *end;
 	int uV;
 	const struct reg_sequence *accs;
@@ -871,8 +871,8 @@ static int cpr_fuse_corner_init(struct cpr_drv *drv)
 		 * regulators than the one used to characterize the algorithms
 		 * (ie, init_voltage_step).
 		 */
-		fdata->min_uV = roundup(fdata->min_uV, step_volt);
-		fdata->max_uV = roundup(fdata->max_uV, step_volt);
+		fuse->min_uV = roundup(fdata->min_uV, step_volt);
+		fuse->max_uV = roundup(fdata->max_uV, step_volt);
 
 		/* Populate uV */
 		uV = cpr_read_fuse_uV(desc, fdata, fuses->init_voltage,
@@ -880,8 +880,6 @@ static int cpr_fuse_corner_init(struct cpr_drv *drv)
 		if (uV < 0)
 			return uV;
 
-		fuse->min_uV = fdata->min_uV;
-		fuse->max_uV = fdata->max_uV;
 		fuse->uV = clamp(uV, fuse->min_uV, fuse->max_uV);
 
 		if (fuse == end) {
@@ -1337,7 +1335,7 @@ static int cpr_find_initial_corner(struct cpr_drv *drv)
 static const struct cpr_desc qcs404_cpr_desc = {
 	.num_fuse_corners = 3,
 	.min_diff_quot = CPR_FUSE_MIN_QUOT_DIFF,
-	.step_quot = (int []){ 25, 25, 25, },
+	.step_quot = (const int []){ 25, 25, 25, },
 	.timer_delay_us = 5000,
 	.timer_cons_up = 0,
 	.timer_cons_down = 2,
@@ -1350,7 +1348,7 @@ static const struct cpr_desc qcs404_cpr_desc = {
 	.cpr_fuses = {
 		.init_voltage_step = 8000,
 		.init_voltage_width = 6,
-		.fuse_corner_data = (struct fuse_corner_data[]){
+		.fuse_corner_data = (const struct fuse_corner_data[]){
 			/* fuse corner 0 */
 			{
 				.ref_uV = 1224000,
@@ -1395,7 +1393,7 @@ static const struct cpr_desc qcs404_cpr_desc = {
 };
 
 static const struct acc_desc qcs404_acc_desc = {
-	.settings = (struct reg_sequence[]){
+	.settings = (const struct reg_sequence[]){
 		{ 0xb120, 0x1041040 },
 		{ 0xb124, 0x41 },
 		{ 0xb120, 0x0 },
@@ -1403,7 +1401,7 @@ static const struct acc_desc qcs404_acc_desc = {
 		{ 0xb120, 0x0 },
 		{ 0xb124, 0x0 },
 	},
-	.config = (struct reg_sequence[]){
+	.config = (const struct reg_sequence[]){
 		{ 0xb138, 0xff },
 		{ 0xb130, 0x5555 },
 	},
