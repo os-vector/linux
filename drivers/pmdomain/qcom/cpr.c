@@ -1593,7 +1593,6 @@ static int cpr_probe(struct platform_device *pdev)
 	int irq, ret;
 	const struct cpr_acc_desc *data;
 	struct device_node *np;
-	u32 cpr_rev = FUSE_REVISION_UNKNOWN;
 
 	data = of_device_get_match_data(dev);
 	if (!data || !data->cpr_desc || !data->acc_desc)
@@ -1636,10 +1635,6 @@ static int cpr_probe(struct platform_device *pdev)
 	 * initialized after attaching to the power domain,
 	 * since it depends on the CPU's OPP table.
 	 */
-	ret = nvmem_cell_read_variable_le_u32(dev, "cpr_fuse_revision", &cpr_rev);
-	if (ret)
-		return ret;
-
 	drv->cpr_fuses = cpr_get_fuses(drv);
 	if (IS_ERR(drv->cpr_fuses))
 		return PTR_ERR(drv->cpr_fuses);
