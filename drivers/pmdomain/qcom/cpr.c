@@ -689,6 +689,10 @@ static int cpr_config(struct cpr_drv *drv)
 	cpr_write(drv, REG_RBIF_IRQ_EN(0), 0);
 	cpr_write(drv, REG_RBCPR_CTL, 0);
 
+	/* Without fuses we never allow enabling, so skip initialization */
+	if (!drv->cpr_fuses)
+		return 0;
+
 	/* Program the default HW ceiling, floor and vlevel */
 	val = (RBIF_LIMIT_CEILING_DEFAULT & RBIF_LIMIT_CEILING_MASK)
 		<< RBIF_LIMIT_CEILING_SHIFT;
@@ -806,6 +810,9 @@ cpr_populate_ring_osc_idx(struct cpr_drv *drv)
 	u32 data;
 	int ret;
 
+	if (!fuses)
+		return 0;
+
 	for (; fuse < end; fuse++, fuses++) {
 		ret = nvmem_cell_read_variable_le_u32(drv->dev, fuses->ring_osc, &data);
 		if (ret)
@@ -897,6 +904,21 @@ static int cpr_fuse_corner_read_voltages(struct cpr_drv *drv)
 	return 0;
 }
 
+static int cpr_fuse_corner_set_ceil_voltages(struct cpr_drv *drv)
+{
+	const struct fuse_corner_data *fdata = drv->desc->cpr_fuses.fuse_corner_data;
+	struct fuse_corner *fuse = drv->fuse_corners;
+	struct fuse_corner *end = &fuse[drv->desc->num_fuse_corners - 1];
+
+	for (; fuse <= end; fuse++, fdata++) {
+		fuse->min_uV = fdata->min_uV;
+		fuse->max_uV = fdata->max_uV;
+		fuse->uV = fuse->max_uV;
+	}
+
+	return 0;
+}
+
 static int cpr_fuse_corner_init(struct cpr_drv *drv)
 {
 	const struct acc_desc *acc_desc = drv->acc_desc;
@@ -918,7 +940,10 @@ static int cpr_fuse_corner_init(struct cpr_drv *drv)
 			accs = acc_desc->override_settings;
 	}
 
-	ret = cpr_fuse_corner_read_voltages(drv);
+	if (drv->cpr_fuses)
+		ret = cpr_fuse_corner_read_voltages(drv);
+	else
+		ret = cpr_fuse_corner_set_ceil_voltages(drv);
 	if (ret)
 		return ret;
 
@@ -1099,7 +1124,7 @@ static int cpr_corner_init(struct cpr_drv *drv)
 	int step_volt = regulator_get_linear_step(drv->vdd_apc);
 	struct dev_pm_opp *opp;
 
-	if (!step_volt)
+	if (fuses && !step_volt)
 		return -EINVAL;
 
 	corner = drv->corners;
@@ -1183,7 +1208,6 @@ static int cpr_corner_init(struct cpr_drv *drv)
 	for (apply_scaling = false, i = 0; corner <= end; corner++, i++) {
 		fnum = cdata[i].fuse_corner;
 		fdata = &desc->cpr_fuses.fuse_corner_data[fnum];
-		quot_offset = fuses[fnum].quotient_offset;
 		fuse = &drv->fuse_corners[fnum];
 		if (fnum)
 			prev_fuse = &drv->fuse_corners[fnum - 1];
@@ -1194,7 +1218,10 @@ static int cpr_corner_init(struct cpr_drv *drv)
 		corner->freq = cdata[i].freq;
 		corner->uV = fuse->uV;
 
-		if (prev_fuse && cdata[i - 1].freq == prev_fuse->max_freq) {
+		if (!fuses) {
+			/* No fuse adjustments, always apply ceiling voltages */
+		} else if (prev_fuse && cdata[i - 1].freq == prev_fuse->max_freq) {
+			quot_offset = fuses[fnum].quotient_offset;
 			scaling = cpr_calculate_scaling(quot_offset, drv,
 							fdata, corner);
 			if (scaling < 0)
@@ -1238,6 +1265,12 @@ static const struct cpr_fuse *cpr_get_fuses(struct cpr_drv *drv)
 	const struct cpr_desc *desc = drv->desc;
 	struct cpr_fuse *fuses;
 	int i;
+
+	/* Skip reading fuses if ceiling voltage is forced */
+	if (device_property_read_bool(drv->dev, "qcom,force-ceiling-voltage")) {
+		dev_info(drv->dev, "using static ceiling voltages instead of AVS\n");
+		return NULL;
+	}
 
 	fuses = devm_kcalloc(drv->dev, desc->num_fuse_corners,
 			     sizeof(struct cpr_fuse),
@@ -1518,7 +1551,8 @@ static int cpr_pd_attach_dev(struct generic_pm_domain *domain,
 	if (ret)
 		return ret;
 
-	cpr_set_loop_allowed(drv);
+	if (drv->cpr_fuses)
+		cpr_set_loop_allowed(drv);
 
 	ret = cpr_init_parameters(drv);
 	if (ret)
