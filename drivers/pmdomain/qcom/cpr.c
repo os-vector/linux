@@ -1628,6 +1628,7 @@ static int cpr_probe(struct platform_device *pdev)
 	drv->dev = dev;
 	drv->desc = data->cpr_desc;
 	drv->acc_desc = data->acc_desc;
+	drv->loop_disabled = true;
 
 	np = of_parse_phandle(dev->of_node, "acc-syscon", 0);
 	if (!np)
