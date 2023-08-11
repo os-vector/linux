@@ -842,41 +842,22 @@ static int cpr_read_fuse_uV(const struct cpr_desc *desc,
 	return DIV_ROUND_UP(uV, step_volt) * step_volt;
 }
 
-static int cpr_fuse_corner_init(struct cpr_drv *drv)
+static int cpr_fuse_corner_read_voltages(struct cpr_drv *drv)
 {
 	const struct cpr_desc *desc = drv->desc;
 	const struct cpr_fuse *fuses = drv->cpr_fuses;
-	const struct acc_desc *acc_desc = drv->acc_desc;
-	int i;
+	struct fuse_corner *fuse = drv->fuse_corners;
+	struct fuse_corner *end = &fuse[desc->num_fuse_corners - 1];
+	const struct fuse_corner_data *fdata = desc->cpr_fuses.fuse_corner_data;
 	unsigned int step_volt;
-	const struct fuse_corner_data *fdata;
-	struct fuse_corner *fuse, *end;
 	int uV;
-	const struct reg_sequence *accs;
 	int ret;
-	u32 val;
-
-	accs = acc_desc->settings;
-	if (acc_desc->override_settings) {
-		ret = nvmem_cell_read_variable_le_u32(drv->dev, "mem_acc_override", &val);
-		if (ret)
-			return ret;
-
-		dev_dbg(drv->dev, "mem acc override fuse value: %#x\n", val);
-		if (val)
-			accs = acc_desc->override_settings;
-	}
 
 	step_volt = regulator_get_linear_step(drv->vdd_apc);
 	if (!step_volt)
 		return -EINVAL;
 
-	/* Populate fuse_corner members */
-	fuse = drv->fuse_corners;
-	end = &fuse[desc->num_fuse_corners - 1];
-	fdata = desc->cpr_fuses.fuse_corner_data;
-
-	for (i = 0; fuse <= end; fuse++, fuses++, i++, fdata++) {
+	for (; fuse <= end; fuse++, fuses++, fdata++) {
 		/*
 		 * Update SoC voltages: platforms might choose a different
 		 * regulators than the one used to characterize the algorithms
@@ -912,8 +893,38 @@ static int cpr_fuse_corner_init(struct cpr_drv *drv)
 		fuse->quot += fdata->quot_offset;
 		fuse->quot += fdata->quot_adjust;
 		fuse->step_quot = desc->step_quot[fuse->ring_osc_idx];
+	}
 
-		/* Populate acc settings */
+	return 0;
+}
+
+static int cpr_fuse_corner_init(struct cpr_drv *drv)
+{
+	const struct acc_desc *acc_desc = drv->acc_desc;
+	struct fuse_corner *fuse = drv->fuse_corners;
+	struct fuse_corner *end = &fuse[drv->desc->num_fuse_corners - 1];
+	int i;
+	const struct reg_sequence *accs;
+	int ret;
+	u32 val;
+
+	accs = acc_desc->settings;
+	if (acc_desc->override_settings) {
+		ret = nvmem_cell_read_variable_le_u32(drv->dev, "mem_acc_override", &val);
+		if (ret)
+			return ret;
+
+		dev_dbg(drv->dev, "mem acc override fuse value: %#x\n", val);
+		if (val)
+			accs = acc_desc->override_settings;
+	}
+
+	ret = cpr_fuse_corner_read_voltages(drv);
+	if (ret)
+		return ret;
+
+	/* Populate acc settings */
+	for (fuse = drv->fuse_corners; fuse <= end; fuse++) {
 		fuse->accs = accs;
 		fuse->num_accs = acc_desc->num_regs_per_fuse;
 		accs += acc_desc->num_regs_per_fuse;
