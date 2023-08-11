@@ -1272,6 +1272,12 @@ static const struct cpr_fuse *cpr_get_fuses(struct cpr_drv *drv)
 		return NULL;
 	}
 
+	/* Fail if CPR description is incomplete and only allows DVFS */
+	if (!desc->step_quot) {
+		dev_err(drv->dev, "fuse-based scaling not supported yet\n");
+		return ERR_PTR(-EINVAL);
+	}
+
 	fuses = devm_kcalloc(drv->dev, desc->num_fuse_corners,
 			     sizeof(struct cpr_fuse),
 			     GFP_KERNEL);
@@ -1385,6 +1391,49 @@ static int cpr_find_initial_corner(struct cpr_drv *drv)
 
 	return 0;
 }
+
+static const struct cpr_desc msm8916_cpr_desc = {
+	/* NOTE: This is incomplete, fuse adjustments are not supported yet */
+	.num_fuse_corners = 3,
+	.cpr_fuses = {
+		.fuse_corner_data = (struct fuse_corner_data[]){
+			/* fuse corner 0 */
+			{
+				.max_uV = 1050000,
+				.min_uV = 1050000,
+			},
+			/* fuse corner 1 */
+			{
+				.max_uV = 1150000,
+				.min_uV = 1050000,
+			},
+			/* fuse corner 2 */
+			{
+				.max_uV = 1350000,
+				.min_uV = 1162500,
+			},
+		},
+	},
+};
+
+static const struct acc_desc msm8916_acc_desc = {
+	.settings = (const struct reg_sequence[]){
+		{ 0xf000, 0x0 },
+		{ 0xf000, 0x100 },
+		{ 0xf000, 0x101 },
+	},
+	.override_settings = (const struct reg_sequence[]){
+		{ 0xf000, 0x0 },
+		{ 0xf000, 0x100 },
+		{ 0xf000, 0x100 },
+	},
+	.num_regs_per_fuse = 1,
+};
+
+static const struct cpr_acc_desc msm8916_cpr_acc_desc = {
+	.cpr_desc = &msm8916_cpr_desc,
+	.acc_desc = &msm8916_acc_desc,
+};
 
 static const struct cpr_desc qcs404_cpr_desc = {
 	.num_fuse_corners = 3,
@@ -1760,6 +1809,7 @@ static void cpr_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id cpr_match_table[] = {
+	{ .compatible = "qcom,msm8916-cpr", .data = &msm8916_cpr_acc_desc },
 	{ .compatible = "qcom,qcs404-cpr", .data = &qcs404_cpr_acc_desc },
 	{ }
 };
