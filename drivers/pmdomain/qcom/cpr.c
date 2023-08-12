@@ -1082,26 +1082,25 @@ static unsigned int cpr_get_fuse_corner(struct dev_pm_opp *opp)
 static unsigned long cpr_get_opp_hz_for_req(struct dev_pm_opp *ref,
 					    struct device *cpu_dev)
 {
-	struct device_node *ref_np __free(device_node) = NULL;
+	struct device_node *ref_np __free(device_node) =
+		dev_pm_opp_get_of_node(ref);
 	struct device_node *desc_np __free(device_node) =
 		dev_pm_opp_of_get_opp_desc_node(cpu_dev);
+	struct of_phandle_iterator it;
+	int err;
 
-	if (!desc_np)
-		return 0;
-
-	ref_np = dev_pm_opp_get_of_node(ref);
-	if (!ref_np)
+	if (!desc_np || !ref_np)
 		return 0;
 
 	for_each_available_child_of_node_scoped(desc_np, child_np) {
-		struct device_node *child_req_np __free(device_node) =
-			of_parse_phandle(child_np, "required-opps", 0);
+		of_for_each_phandle(&it, err, child_np, "required-opps", NULL, 0) {
+			if (it.node == ref_np) {
+				u64 rate = 0;
 
-		if (child_req_np == ref_np) {
-			u64 rate = 0;
-
-			of_property_read_u64(child_np, "opp-hz", &rate);
-			return (unsigned long) rate;
+				of_property_read_u64(child_np, "opp-hz", &rate);
+				of_node_put(it.node);
+				return (unsigned long) rate;
+			}
 		}
 	}
 
