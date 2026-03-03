@@ -60,6 +60,16 @@ config VIDEO_AR0521
 	  To compile this driver as a module, choose M here: the
 	  module will be called ar0521.
 
+config VIDEO_BF2253L
+	tristate "BYD BF2253L sensor support"
+	select V4L2_CCI_I2C
+	help
+	  This is a V4L2 sensor driver for the BYD BF2253L 2MP
+	  camera sensor (used in Anki Vector 2.0).
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called bf2253l.
+
 config VIDEO_GC0308
 	tristate "GalaxyCore GC0308 sensor support"
 	select V4L2_CCI_I2C
