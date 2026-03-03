@@ -740,7 +740,7 @@ static const struct clk_parent_data gcc_mclk_data[] = {
 };
 
 static const struct freq_tbl ftbl_mclk_clk_src[] = {
-	F(24000000, P_GPLL2, 1, 1, 33),
+	F(24000000, P_GPLL0, 1, 3, 100),
 	F(66667000, P_GPLL0, 12, 0, 0),
 	{ }
 };
