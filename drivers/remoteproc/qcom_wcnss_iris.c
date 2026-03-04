@@ -33,6 +33,17 @@ struct iris_data {
 	bool use_48mhz_xo;
 };
 
+static const struct iris_data wcn3610_data = {
+        .vregs = (struct wcnss_vreg_info[]) {
+                { "vddxo",  1800000, 1800000, 10000 },
+                { "vddrfa", 1300000, 1300000, 100000 },
+                { "vddpa",  3300000, 3300000, 515000 },
+                { "vdddig", 1800000, 1800000, 10000 },
+        },
+        .num_vregs = 4,
+        .use_48mhz_xo = false,
+};
+
 static const struct iris_data wcn3620_data = {
 	.vregs = (struct wcnss_vreg_info[]) {
 		{ "vddxo",  1800000, 1800000, 10000 },
@@ -95,6 +106,7 @@ void qcom_iris_disable(struct qcom_iris *iris)
 }
 
 static const struct of_device_id iris_of_match[] = {
+	{ .compatible = "qcom,wcn3610", .data = &wcn3610_data },
 	{ .compatible = "qcom,wcn3620", .data = &wcn3620_data },
 	{ .compatible = "qcom,wcn3660", .data = &wcn3660_data },
 	{ .compatible = "qcom,wcn3660b", .data = &wcn3680_data },

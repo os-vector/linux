@@ -151,6 +151,29 @@ static struct ieee80211_supported_band wcn_band_2ghz = {
 	}
 };
 
+static struct ieee80211_supported_band wcn3610_band_2ghz = {
+	.channels	= wcn_2ghz_channels,
+	.n_channels	= ARRAY_SIZE(wcn_2ghz_channels),
+	.bitrates	= wcn_2ghz_rates,
+	.n_bitrates	= ARRAY_SIZE(wcn_2ghz_rates),
+	.ht_cap		= {
+		.cap =	IEEE80211_HT_CAP_GRN_FLD |
+			IEEE80211_HT_CAP_SGI_20 |
+			IEEE80211_HT_CAP_DSSSCCK40 |
+			IEEE80211_HT_CAP_LSIG_TXOP_PROT |
+			IEEE80211_HT_CAP_SGI_40 |
+			IEEE80211_HT_CAP_SUP_WIDTH_20_40,
+		.ht_supported = true,
+		.ampdu_factor = IEEE80211_HT_MAX_AMPDU_64K,
+		.ampdu_density = IEEE80211_HT_MPDU_DENSITY_16,
+		.mcs = {
+			.rx_mask = { 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, },
+			.rx_highest = cpu_to_le16(155),
+			.tx_params = IEEE80211_HT_MCS_TX_DEFINED,
+		}
+	}
+};
+
 static struct ieee80211_supported_band wcn_band_5ghz = {
 	.channels	= wcn_5ghz_channels,
 	.n_channels	= ARRAY_SIZE(wcn_5ghz_channels),
@@ -1437,8 +1460,12 @@ static int wcn36xx_init_ieee80211(struct wcn36xx *wcn)
 		BIT(NL80211_IFTYPE_ADHOC) |
 		BIT(NL80211_IFTYPE_MESH_POINT);
 
-	wcn->hw->wiphy->bands[NL80211_BAND_2GHZ] = &wcn_band_2ghz;
-	if (wcn->rf_id != RF_IRIS_WCN3620)
+	if (wcn->rf_id == RF_IRIS_WCN3610)
+		wcn->hw->wiphy->bands[NL80211_BAND_2GHZ] = &wcn3610_band_2ghz;
+	else
+		wcn->hw->wiphy->bands[NL80211_BAND_2GHZ] = &wcn_band_2ghz;
+
+	if (wcn->rf_id != RF_IRIS_WCN3620 && wcn->rf_id != RF_IRIS_WCN3610)
 		wcn->hw->wiphy->bands[NL80211_BAND_5GHZ] = &wcn_band_5ghz;
 
 	if (wcn->rf_id == RF_IRIS_WCN3680)
@@ -1535,6 +1562,8 @@ static int wcn36xx_platform_get_resources(struct wcn36xx *wcn,
 	/* External RF module */
 	iris_node = of_get_child_by_name(mmio_node, "iris");
 	if (iris_node) {
+		if (of_device_is_compatible(iris_node, "qcom,wcn3610"))
+			wcn->rf_id = RF_IRIS_WCN3610;
 		if (of_device_is_compatible(iris_node, "qcom,wcn3620"))
 			wcn->rf_id = RF_IRIS_WCN3620;
 		if (of_device_is_compatible(iris_node, "qcom,wcn3660") ||
