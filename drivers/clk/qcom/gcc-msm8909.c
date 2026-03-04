@@ -294,10 +294,17 @@ static struct clk_rcg2 apss_ahb_clk_src = {
 	}
 };
 
+static const struct freq_tbl ftbl_bimc_ddr_clk_src[] = {
+	F(400000000, P_GPLL0, 2, 0, 0),
+	F(800000000, P_GPLL0, 1, 0, 0),
+	{ }
+};
+
 static struct clk_rcg2 bimc_ddr_clk_src = {
 	.cmd_rcgr = 0x32004,
 	.hid_width = 5,
 	.parent_map = gcc_xo_gpll0_bimc_map,
+	.freq_tbl = ftbl_bimc_ddr_clk_src,
 	.clkr.hw.init = &(struct clk_init_data) {
 		.name = "bimc_ddr_clk_src",
 		.parent_data = gcc_xo_gpll0_bimc_data,
