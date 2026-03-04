@@ -919,6 +919,15 @@ config LEDS_PM8058
 	  Choose this option if you want to use the LED drivers in
 	  the Qualcomm PM8058 PMIC.
 
+config LEDS_PM8916_MPP
+	tristate "LED Support for Qualcomm PM8916 MPP"
+	depends on MFD_SPMI_PMIC
+	depends on LEDS_CLASS
+	depends on OF
+	help
+	  This driver supports LEDs connected to MPP outputs
+	  in current sink mode on Qualcomm PM8916
+
 config LEDS_MLXCPLD
 	tristate "LED support for the Mellanox boards"
 	depends on X86 && DMI
