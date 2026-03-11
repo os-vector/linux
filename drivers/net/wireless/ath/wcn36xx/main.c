@@ -887,10 +887,11 @@ static void wcn36xx_bss_info_changed(struct ieee80211_hw *hw,
 			wcn36xx_smd_set_link_st(wcn, bss_conf->bssid,
 				vif->addr,
 				WCN36XX_HAL_LINK_POSTASSOC_STATE);
+			sta_priv->aid = vif->cfg.aid;
 			wcn36xx_smd_config_bss(wcn, vif, sta,
 					       bss_conf->bssid,
 					       true);
-			sta_priv->aid = vif->cfg.aid;
+
 			/*
 			 * config_sta must be called from  because this is the
 			 * place where AID is available.
@@ -1427,6 +1428,7 @@ static int wcn36xx_init_ieee80211(struct wcn36xx *wcn)
 	ieee80211_hw_set(wcn->hw, TIMING_BEACON_ONLY);
 	ieee80211_hw_set(wcn->hw, AMPDU_AGGREGATION);
 	ieee80211_hw_set(wcn->hw, SUPPORTS_PS);
+	ieee80211_hw_set(wcn->hw, SUPPORTS_DYNAMIC_PS);
 	ieee80211_hw_set(wcn->hw, SIGNAL_DBM);
 	ieee80211_hw_set(wcn->hw, HAS_RATE_CONTROL);
 	ieee80211_hw_set(wcn->hw, SINGLE_SCAN_ON_ALL_BANDS);

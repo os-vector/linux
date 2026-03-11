@@ -110,7 +110,7 @@ static struct wcn36xx_cfg_val wcn3610_cfg_vals[] = {
 	WCN36XX_CFG_VAL(FIXED_RATE_MULTICAST_5GHZ, 5),
 	WCN36XX_CFG_VAL(DEFAULT_RATE_INDEX_5GHZ, 5),
 	WCN36XX_CFG_VAL(DEFAULT_RATE_INDEX_24GHZ, 6),
-	WCN36XX_CFG_VAL(MAX_BA_SESSIONS, 40),
+	WCN36XX_CFG_VAL(MAX_BA_SESSIONS, 5),
 	WCN36XX_CFG_VAL(PS_DATA_INACTIVITY_TIMEOUT, 200),
 	WCN36XX_CFG_VAL(PS_ENABLE_BCN_FILTER, 1),
 	WCN36XX_CFG_VAL(PS_ENABLE_RSSI_MONITOR, 1),
@@ -2224,6 +2224,7 @@ int wcn36xx_smd_enter_bmps(struct wcn36xx *wcn, struct ieee80211_vif *vif)
 
 	msg_body.bss_index = vif_priv->bss_index;
 	msg_body.tbtt = vif->bss_conf.sync_tsf;
+	msg_body.dtim_count = vif->bss_conf.sync_dtim_count;
 	msg_body.dtim_period = vif_priv->dtim_period;
 
 	PREPARE_HAL_BUF(wcn->hal_buf, msg_body);
@@ -2438,8 +2439,7 @@ int wcn36xx_smd_feature_caps_exchange(struct wcn36xx *wcn)
 	mutex_lock(&wcn->hal_mutex);
 	INIT_HAL_MSG(msg_body, WCN36XX_HAL_FEATURE_CAPS_EXCHANGE_REQ);
 
-	if (wcn->rf_id != RF_IRIS_WCN3610)
-		wcn36xx_firmware_set_feat_caps(msg_body.feat_caps, STA_POWERSAVE);
+	wcn36xx_firmware_set_feat_caps(msg_body.feat_caps, STA_POWERSAVE);
 	if (wcn->rf_id == RF_IRIS_WCN3680) {
 		wcn36xx_firmware_set_feat_caps(msg_body.feat_caps, DOT11AC);
 		wcn36xx_firmware_set_feat_caps(msg_body.feat_caps, WLAN_CH144);
