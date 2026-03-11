@@ -286,6 +286,8 @@ static void wcn36xx_update_survey(struct wcn36xx *wcn, int rssi, int snr,
 		idx = wcn->hw->wiphy->bands[NL80211_BAND_2GHZ]->n_channels;
 
 	sband = wcn->hw->wiphy->bands[band];
+	if (!sband)
+		return;
 	channel = sband->channels;
 
 	for (i = 0; i < sband->n_channels; i++, channel++) {
@@ -367,7 +369,8 @@ int wcn36xx_rx_skb(struct wcn36xx *wcn, struct sk_buff *skb)
 		 */
 		u8 hwch = (bd->reserved0 << 4) + bd->rx_ch;
 
-		if (bd->rf_band != 1 && hwch <= sizeof(ab_rx_ch_map) && hwch >= 1) {
+		if (bd->rf_band != 1 && hwch <= sizeof(ab_rx_ch_map) && hwch >= 1 &&
+		    wcn->hw->wiphy->bands[NL80211_BAND_5GHZ]) {
 			status.band = NL80211_BAND_5GHZ;
 			status.freq = ieee80211_channel_to_frequency(ab_rx_ch_map[hwch - 1],
 								     status.band);
