@@ -7,6 +7,9 @@
 #include <linux/adreno-smmu-priv.h>
 #include <linux/io-pgtable.h>
 #include <linux/kmemleak.h>
+#ifdef CONFIG_ARM_DMA_USE_IOMMU
+#include <asm/dma-iommu.h>
+#endif
 #include "msm_drv.h"
 #include "msm_gpu_trace.h"
 #include "msm_mmu.h"
@@ -727,6 +730,15 @@ struct msm_mmu *msm_iommu_new(struct device *dev, unsigned long quirks)
 
 	if (!device_iommu_mapped(dev))
 		return ERR_PTR(-ENODEV);
+
+#ifdef CONFIG_ARM_DMA_USE_IOMMU
+	if (dev->archdata.mapping) {
+		struct dma_iommu_mapping *mapping = to_dma_iommu_mapping(dev);
+
+		arm_iommu_detach_device(dev);
+		arm_iommu_release_mapping(mapping);
+	}
+#endif
 
 	domain = iommu_paging_domain_alloc(dev);
 	if (IS_ERR(domain))
