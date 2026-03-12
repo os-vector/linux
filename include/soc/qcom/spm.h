@@ -19,4 +19,6 @@ struct spm_driver_data;
 void spm_set_low_power_mode(struct spm_driver_data *drv,
 			    enum pm_sleep_mode mode);
 
+void qcom_spm_set_l2_mode(enum pm_sleep_mode mode);
+
 #endif /* __SPM_H__ */
