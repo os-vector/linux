@@ -175,18 +175,6 @@
 &cpu2_saw { compatible = "qcom,msm8916-saw2-v3.0-cpu", "qcom,saw2"; };
 &cpu3_saw { compatible = "qcom,msm8916-saw2-v3.0-cpu", "qcom,saw2"; };
 
-&l2_saw {
-	l2_saw_vreg: regulator {
-		regulator-name = "vdd-apc";
-		regulator-min-microvolt = <1050000>;
-		regulator-max-microvolt = <1350000>;
-	};
-};
-
-&cpu0 { cpu-supply = <&l2_saw_vreg>; };
-&cpu1 { cpu-supply = <&l2_saw_vreg>; };
-&cpu2 { cpu-supply = <&l2_saw_vreg>; };
-&cpu3 { cpu-supply = <&l2_saw_vreg>; };
 
 &pm8916_usbin {
 	status = "okay";
