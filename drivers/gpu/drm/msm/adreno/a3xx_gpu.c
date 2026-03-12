@@ -209,7 +209,8 @@ static int a3xx_hw_init(struct msm_gpu *gpu)
 		 * higher frequency than GPU:
 		 */
 		gpu_write(gpu, REG_A3XX_VBIF_CLKON, 0x00000001);
-
+	} else if (adreno_is_a304(adreno_gpu)) {
+		gpu_write(gpu, REG_A3XX_VBIF_ROUND_ROBIN_QOS_ARB, 0x0003);
 	} else {
 		BUG();
 	}
@@ -242,6 +243,7 @@ static int a3xx_hw_init(struct msm_gpu *gpu)
 
 	/* Enable Clock gating: */
 	if (adreno_is_a305b(adreno_gpu) ||
+		adreno_is_a304(adreno_gpu) ||
 	    adreno_is_a306(adreno_gpu) ||
 	    adreno_is_a306a(adreno_gpu))
 		gpu_write(gpu, REG_A3XX_RBBM_CLOCK_CTL, 0xaaaaaaaa);
@@ -341,6 +343,7 @@ static int a3xx_hw_init(struct msm_gpu *gpu)
 
 	/* CP ROQ queue sizes (bytes) - RB:16, ST:16, IB1:32, IB2:64 */
 	if (adreno_is_a305(adreno_gpu) ||
+		adreno_is_a304(adreno_gpu) ||
 	    adreno_is_a306(adreno_gpu) ||
 	    adreno_is_a306a(adreno_gpu) ||
 	    adreno_is_a320(adreno_gpu)) {

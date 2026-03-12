@@ -2,7 +2,7 @@
 
 PATH=/home/kerigan/projects/bootimg_tools:$PATH
 
-mkbootimg --cmdline 'earlycon console=ttyMSM0,115200 ro androidboot.hardware=qcom ehci-hcd.park=3 msm_rtb.filter=0x37 lpm_levels.sleep_disabled=1 rootwait fw_devlink.sync_state=timeout' \
+mkbootimg --cmdline 'earlycon console=ttyMSM0,115200 ro androidboot.hardware=qcom ehci-hcd.park=3 msm_rtb.filter=0x37 lpm_levels.sleep_disabled=1 rootwait fw_devlink.sync_state=timeout iommu.passthrough=1' \
   --kernel v-out/zImage-dtb \
   --ramdisk NONE \
   -o v-out/test.img
