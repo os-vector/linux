@@ -142,7 +142,9 @@ static const struct camss_subdev_resources csiphy_res_8x09[] = {
 static const struct camss_subdev_resources csid_res_8x09[] = {
 	/* CSID0 */
 	{
-		.regulators = { "vdda" },
+		.regulators = {
+			{ .supply = "vdda", .init_load_uA = 40000 }
+		},
 		.clock = { "top_ahb", "ispif_ahb", "csi0_ahb", "ahb",
 			   "csi0", "csi0_phy", "csi0_pix", "csi0_rdi" },
 		.clock_rate = { { 0 },
@@ -164,7 +166,9 @@ static const struct camss_subdev_resources csid_res_8x09[] = {
 
 	/* CSID1 */
 	{
-		.regulators = { "vdda" },
+		.regulators = {
+			{ .supply = "vdda", .init_load_uA = 40000 }
+		},
 		.clock = { "top_ahb", "ispif_ahb", "csi1_ahb", "ahb",
 			   "csi1", "csi1_phy", "csi1_pix", "csi1_rdi" },
 		.clock_rate = { { 0 },
@@ -4899,7 +4903,7 @@ static int camss_subdev_notifier_bound(struct v4l2_async_notifier *async,
 					MEDIA_LNK_FL_IMMUTABLE | MEDIA_LNK_FL_ENABLED);
 	if (ret < 0) {
 		camss_link_err(camss, sensor->name, 
-			csiphy->subdev.entityname, ret);
+			csiphy->subdev.entity.name, ret);
 		return ret;
 	}
 

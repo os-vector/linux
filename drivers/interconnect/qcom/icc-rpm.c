@@ -6,6 +6,7 @@
 #include <linux/device.h>
 #include <linux/interconnect-provider.h>
 #include <linux/io.h>
+#include <linux/limits.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/of_platform.h>
@@ -392,6 +393,13 @@ static int qcom_icc_set(struct icc_node *src, struct icc_node *dst)
 		return clk_set_rate(qp->bus_clk, active_rate);
 	}
 
+	if (qp->max_rate_khz[QCOM_SMD_RPM_ACTIVE_STATE])
+		active_rate = min_t(u64, active_rate,
+				    qp->max_rate_khz[QCOM_SMD_RPM_ACTIVE_STATE]);
+	if (qp->max_rate_khz[QCOM_SMD_RPM_SLEEP_STATE])
+		sleep_rate = min_t(u64, sleep_rate,
+				   qp->max_rate_khz[QCOM_SMD_RPM_SLEEP_STATE]);
+
 	/* RPM only accepts <=INT_MAX rates */
 	active_rate = min_t(u64, active_rate, INT_MAX);
 	sleep_rate = min_t(u64, sleep_rate, INT_MAX);
@@ -445,6 +453,84 @@ static int qcom_icc_set(struct icc_node *src, struct icc_node *dst)
 
 	return 0;
 }
+
+static int qcom_icc_apply_rate_cap(struct qcom_icc_provider *qp, int state, u32 rate_khz)
+{
+	int ret;
+
+	if (!qp->bus_clk_desc || !rate_khz)
+		return 0;
+
+	ret = qcom_icc_rpm_set_bus_rate(qp->bus_clk_desc, state, rate_khz);
+	if (ret)
+		return ret;
+
+	qp->bus_clk_rate[state] = rate_khz;
+	return 0;
+}
+
+static ssize_t scaling_max_rate_khz_show(struct device *dev,
+					  struct device_attribute *attr, char *buf)
+{
+	struct qcom_icc_provider *qp = dev_get_drvdata(dev);
+
+	return sysfs_emit(buf, "%u\n", qp->max_rate_khz[QCOM_SMD_RPM_ACTIVE_STATE]);
+}
+
+static ssize_t scaling_max_rate_khz_store(struct device *dev,
+					   struct device_attribute *attr,
+					   const char *buf, size_t count)
+{
+	struct qcom_icc_provider *qp = dev_get_drvdata(dev);
+	u32 rate_khz;
+	int ret;
+
+	ret = kstrtou32(buf, 10, &rate_khz);
+	if (ret)
+		return ret;
+
+	qp->max_rate_khz[QCOM_SMD_RPM_ACTIVE_STATE] = rate_khz;
+	ret = qcom_icc_apply_rate_cap(qp, QCOM_SMD_RPM_ACTIVE_STATE, rate_khz);
+	return ret ?: count;
+}
+static DEVICE_ATTR_RW(scaling_max_rate_khz);
+
+static ssize_t scaling_max_sleep_rate_khz_show(struct device *dev,
+						struct device_attribute *attr, char *buf)
+{
+	struct qcom_icc_provider *qp = dev_get_drvdata(dev);
+
+	return sysfs_emit(buf, "%u\n", qp->max_rate_khz[QCOM_SMD_RPM_SLEEP_STATE]);
+}
+
+static ssize_t scaling_max_sleep_rate_khz_store(struct device *dev,
+						 struct device_attribute *attr,
+						 const char *buf, size_t count)
+{
+	struct qcom_icc_provider *qp = dev_get_drvdata(dev);
+	u32 rate_khz;
+	int ret;
+
+	ret = kstrtou32(buf, 10, &rate_khz);
+	if (ret)
+		return ret;
+
+	qp->max_rate_khz[QCOM_SMD_RPM_SLEEP_STATE] = rate_khz;
+	ret = qcom_icc_apply_rate_cap(qp, QCOM_SMD_RPM_SLEEP_STATE, rate_khz);
+	return ret ?: count;
+}
+static DEVICE_ATTR_RW(scaling_max_sleep_rate_khz);
+
+static struct attribute *qcom_icc_bus_attrs[] = {
+	&dev_attr_scaling_max_rate_khz.attr,
+	&dev_attr_scaling_max_sleep_rate_khz.attr,
+	NULL,
+};
+
+static const struct attribute_group qcom_icc_bus_attr_group = {
+	.name = "bus_scaling",
+	.attrs = qcom_icc_bus_attrs,
+};
 
 int qnoc_probe(struct platform_device *pdev)
 {
@@ -611,6 +697,12 @@ regmap_done:
 
 	platform_set_drvdata(pdev, qp);
 
+	if (qp->bus_clk_desc) {
+		ret = sysfs_create_group(&dev->kobj, &qcom_icc_bus_attr_group);
+		if (ret)
+			dev_warn(dev, "failed to create bus_scaling sysfs: %d\n", ret);
+	}
+
 	/* Populate child NoC devices if any */
 	if (of_get_child_count(dev->of_node) > 0) {
 		ret = of_platform_populate(dev->of_node, NULL, NULL, dev);
@@ -634,7 +726,9 @@ EXPORT_SYMBOL(qnoc_probe);
 void qnoc_remove(struct platform_device *pdev)
 {
 	struct qcom_icc_provider *qp = platform_get_drvdata(pdev);
-
+	
+	if (qp->bus_clk_desc)
+		sysfs_remove_group(&pdev->dev.kobj, &qcom_icc_bus_attr_group);
 	icc_provider_deregister(&qp->provider);
 	icc_nodes_remove(&qp->provider);
 	clk_disable_unprepare(qp->bus_clk);

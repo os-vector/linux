@@ -67,6 +67,7 @@ struct qcom_icc_provider {
 	struct clk_bulk_data *intf_clks;
 	bool keep_alive;
 	bool ignore_enxio;
+	u32 max_rate_khz[QCOM_SMD_RPM_STATE_NUM];
 };
 
 /**
@@ -169,5 +170,6 @@ void qnoc_remove(struct platform_device *pdev);
 bool qcom_icc_rpm_smd_available(void);
 int qcom_icc_rpm_smd_send(int ctx, int rsc_type, int id, u32 val);
 int qcom_icc_rpm_set_bus_rate(const struct rpm_clk_resource *clk, int ctx, u32 rate);
+int qcom_icc_rpm_smd_send_msg(int ctx, u32 rsc_type, u32 rsc_id, u32 key, u32 val);
 
 #endif
