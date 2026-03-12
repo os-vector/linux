@@ -62,6 +62,19 @@ int qcom_icc_rpm_set_bus_rate(const struct rpm_clk_resource *clk, int ctx, u32 r
 }
 EXPORT_SYMBOL_GPL(qcom_icc_rpm_set_bus_rate);
 
+int qcom_icc_rpm_smd_send_msg(int ctx, u32 rsc_type, u32 rsc_id, u32 key, u32 val)
+{
+	struct icc_rpm_smd_req req = {
+		.key = cpu_to_le32(key),
+		.nbytes = cpu_to_le32(sizeof(u32)),
+		.value = cpu_to_le32(val),
+	};
+
+	return qcom_rpm_smd_write(icc_smd_rpm, ctx, rsc_type, rsc_id,
+				  &req, sizeof(req));
+}
+EXPORT_SYMBOL_GPL(qcom_icc_rpm_smd_send_msg);
+
 static void qcom_icc_rpm_smd_remove(struct platform_device *pdev)
 {
 	icc_smd_rpm = NULL;
