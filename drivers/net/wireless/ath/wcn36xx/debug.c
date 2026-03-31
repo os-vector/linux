@@ -173,6 +173,52 @@ static const struct file_operations fops_wcn36xx_firmware_feat_caps = {
 	.read = read_file_firmware_feature_caps,
 };
 
+static ssize_t read_file_btc_exec_mode(struct file *file,
+				       char __user *user_buf,
+				       size_t count, loff_t *ppos)
+{
+	struct wcn36xx *wcn = file->private_data;
+	char buf[12];
+	int len;
+
+	mutex_lock(&wcn->hal_mutex);
+	len = scnprintf(buf, sizeof(buf), "%u\n", wcn->btc_exec_mode);
+	mutex_unlock(&wcn->hal_mutex);
+
+	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
+}
+
+static ssize_t write_file_btc_exec_mode(struct file *file,
+					 const char __user *user_buf,
+					 size_t count, loff_t *ppos)
+{
+	struct wcn36xx *wcn = file->private_data;
+	unsigned int val;
+	int ret;
+
+	ret = kstrtouint_from_user(user_buf, count, 0, &val);
+	if (ret)
+		return ret;
+
+	if (val > 6)
+		return -EINVAL;
+
+	mutex_lock(&wcn->hal_mutex);
+	ret = wcn36xx_smd_update_cfg(wcn, WCN36XX_HAL_CFG_BTC_EXECUTION_MODE,
+				     val);
+	if (!ret)
+		wcn->btc_exec_mode = val;
+	mutex_unlock(&wcn->hal_mutex);
+
+	return ret ? ret : count;
+}
+
+static const struct file_operations fops_wcn36xx_btc_exec_mode = {
+	.open = simple_open,
+	.read = read_file_btc_exec_mode,
+	.write = write_file_btc_exec_mode,
+};
+
 #define ADD_FILE(name, mode, fop, priv_data)		\
 	do {							\
 		struct dentry *d;				\
@@ -202,6 +248,7 @@ void wcn36xx_debugfs_init(struct wcn36xx *wcn)
 	ADD_FILE(dump, 0200, &fops_wcn36xx_dump, wcn);
 	ADD_FILE(firmware_feat_caps, 0200,
 		 &fops_wcn36xx_firmware_feat_caps, wcn);
+	ADD_FILE(btc_exec_mode, 0600, &fops_wcn36xx_btc_exec_mode, wcn);
 }
 
 void wcn36xx_debugfs_exit(struct wcn36xx *wcn)
