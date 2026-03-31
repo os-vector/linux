@@ -221,7 +221,10 @@ static int qcom_icc_rpm_set(struct qcom_icc_node *qn, u64 *bw)
 						    RPM_BUS_MASTER_REQ,
 						    qn->mas_rpm_id,
 						    bw_bps);
-			if (ret) {
+			if (ret == -ENXIO) {
+				pr_debug("qcom_icc_rpm_smd_send mas %d not in RPM firmware, skipping\n",
+					 qn->mas_rpm_id);
+			} else if (ret) {
 				pr_err("qcom_icc_rpm_smd_send mas %d error %d\n",
 				qn->mas_rpm_id, ret);
 				return ret;
@@ -233,7 +236,10 @@ static int qcom_icc_rpm_set(struct qcom_icc_node *qn, u64 *bw)
 						    RPM_BUS_SLAVE_REQ,
 						    qn->slv_rpm_id,
 						    bw_bps);
-			if (ret) {
+			if (ret == -ENXIO) {
+				pr_debug("qcom_icc_rpm_smd_send slv %d not in RPM firmware, skipping\n",
+					 qn->slv_rpm_id);
+			} else if (ret) {
 				pr_err("qcom_icc_rpm_smd_send slv %d error %d\n",
 				qn->slv_rpm_id, ret);
 				return ret;

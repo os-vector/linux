@@ -115,18 +115,18 @@
 			CPU_SLEEP_0: cpu-sleep-0 {
 				compatible = "qcom,idle-state-spc";
 				idle-state-name = "standalone-power-collapse";
-				entry-latency-us = <180>;
-				exit-latency-us = <240>;
-				min-residency-us = <1260>;
+				entry-latency-us = <50>;
+				exit-latency-us = <50>;
+				min-residency-us = <100>;
 				local-timer-stop;
 			};
 
 			CLUSTER_SLEEP_0: cluster-sleep-0 {
 				compatible = "qcom,idle-state-pc";
-				idle-state-name = "l2-gdhs";
-				entry-latency-us = <250>;
-				exit-latency-us = <400>;
-				min-residency-us = <1500>;
+				idle-state-name = "power-collapse";
+				entry-latency-us = <80>;
+				exit-latency-us = <80>;
+				min-residency-us = <200>;
 				local-timer-stop;
 			};
 		};
@@ -419,71 +419,71 @@
 			#interconnect-cells = <1>;
 		};
 		
-		gpu_iommu: iommu@1f08000 {
-			#address-cells = <1>;
-			#size-cells = <1>;
-			#iommu-cells = <1>;
-			compatible = "qcom,msm8916-iommu", "qcom,msm-iommu-v1";
-			ranges = <0 0x01f08000 0x10000>;
-			clocks = <&gcc GCC_SMMU_CFG_CLK>,
-				 <&gcc GCC_GFX_TCU_CLK>;
-			clock-names = "iface", "bus";
-			qcom,iommu-secure-id = <18>;
+		// gpu_iommu: iommu@1f08000 {
+		// 	#address-cells = <1>;
+		// 	#size-cells = <1>;
+		// 	#iommu-cells = <1>;
+		// 	compatible = "qcom,msm8916-iommu", "qcom,msm-iommu-v1";
+		// 	ranges = <0 0x01f08000 0x10000>;
+		// 	clocks = <&gcc GCC_SMMU_CFG_CLK>,
+		// 		 <&gcc GCC_GFX_TCU_CLK>;
+		// 	clock-names = "iface", "bus";
+		// 	qcom,iommu-secure-id = <18>;
 
-			/* GFX3D_USER */
-			iommu-ctx@1000 {
-				compatible = "qcom,msm-iommu-v1-ns";
-				reg = <0x1000 0x1000>;
-				interrupts = <GIC_SPI 241 IRQ_TYPE_LEVEL_HIGH>;
-			};
+		// 	/* GFX3D_USER */
+		// 	iommu-ctx@1000 {
+		// 		compatible = "qcom,msm-iommu-v1-ns";
+		// 		reg = <0x1000 0x1000>;
+		// 		interrupts = <GIC_SPI 241 IRQ_TYPE_LEVEL_HIGH>;
+		// 	};
 
-			/* GFX3D_PRIV */
-			iommu-ctx@2000 {
-				compatible = "qcom,msm-iommu-v1-ns";
-				reg = <0x2000 0x1000>;
-				interrupts = <GIC_SPI 242 IRQ_TYPE_LEVEL_HIGH>;
-			};
-		};
+		// 	/* GFX3D_PRIV */
+		// 	iommu-ctx@2000 {
+		// 		compatible = "qcom,msm-iommu-v1-ns";
+		// 		reg = <0x2000 0x1000>;
+		// 		interrupts = <GIC_SPI 242 IRQ_TYPE_LEVEL_HIGH>;
+		// 	};
+		// };
 
-		gpu: gpu@1c00000 {
-			compatible = "amd,imageon-304.0", "amd,imageon";
-			reg = <0x01c00000 0x10000
-		       0x01c10000 0x10000
-		       0x0005c00c 0x8>;
-			reg-names = "kgsl_3d0_reg_memory";
-			interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "kgsl_3d0_irq";
-			clock-names =
-			    "core",
-			    "iface",
-			    "mem_iface",
-			    "alt_mem_iface",
-			    "gfx3d";
-			clocks =
-			    <&gcc GCC_OXILI_GFX3D_CLK>,
-			    <&gcc GCC_OXILI_AHB_CLK>,
-			    <&gcc GCC_BIMC_GFX_CLK>,
-			    <&gcc GCC_BIMC_GPU_CLK>,
-			    <&gcc GFX3D_CLK_SRC>;
-			power-domains = <&gcc OXILI_GDSC>;
-			operating-points-v2 = <&gpu_opp_table>;
-			iommus = <&gpu_iommu 1>, <&gpu_iommu 2>;
-			#cooling-cells = <2>;
-			qcom,force-iommu;
+		// gpu: gpu@1c00000 {
+		// 	compatible = "amd,imageon-304.0", "amd,imageon";
+		// 	reg = <0x01c00000 0x10000
+		//        0x01c10000 0x10000
+		//        0x0005c00c 0x8>;
+		// 	reg-names = "kgsl_3d0_reg_memory";
+		// 	interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
+		// 	interrupt-names = "kgsl_3d0_irq";
+		// 	clock-names =
+		// 	    "core",
+		// 	    "iface",
+		// 	    "mem_iface",
+		// 	    "alt_mem_iface",
+		// 	    "gfx3d";
+		// 	clocks =
+		// 	    <&gcc GCC_OXILI_GFX3D_CLK>,
+		// 	    <&gcc GCC_OXILI_AHB_CLK>,
+		// 	    <&gcc GCC_BIMC_GFX_CLK>,
+		// 	    <&gcc GCC_BIMC_GPU_CLK>,
+		// 	    <&gcc GFX3D_CLK_SRC>;
+		// 	power-domains = <&gcc OXILI_GDSC>;
+		// 	operating-points-v2 = <&gpu_opp_table>;
+		// 	iommus = <&gpu_iommu 1>, <&gpu_iommu 2>;
+		// 	#cooling-cells = <2>;
+		// 	qcom,force-iommu;
 
-			status = "okay";
+		// 	status = "disabled";
 
-			gpu_opp_table: opp-table {
-				compatible = "operating-points-v2";
+		// 	gpu_opp_table: opp-table {
+		// 		compatible = "operating-points-v2";
 
-				opp-456000000 {
-					opp-hz = /bits/ 64 <456000000>;
-				};
-				opp-19200000 {
-					opp-hz = /bits/ 64 <19200000>;
-				};
-			};
-		};
+		// 		opp-456000000 {
+		// 			opp-hz = /bits/ 64 <456000000>;
+		// 		};
+		// 		opp-19200000 {
+		// 			opp-hz = /bits/ 64 <19200000>;
+		// 		};
+		// 	};
+		// };
 
 		rng@22000 {
 			compatible = "qcom,prng";

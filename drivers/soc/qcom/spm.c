@@ -29,6 +29,8 @@
 #define SPM_CTL_INDEX		0x7f
 #define SPM_CTL_INDEX_SHIFT	4
 #define SPM_CTL_EN		BIT(0)
+#define SPM_CTL_PC_MODE		BIT(16)
+#define SPM_CTL_SLP_CMD		BIT(17)
 
 /* These registers might be specific to SPM 1.1 */
 #define SPM_VCTL_VLVL			GENMASK(7, 0)
@@ -72,6 +74,7 @@ struct spm_reg_data {
 	u32 spm_ctl;
 	u8 seq[MAX_SEQ_DATA];
 	u8 start_index[PM_SLEEP_MODE_NR];
+	u32 mode_ctl[PM_SLEEP_MODE_NR];
 
 	smp_call_func_t set_vdd;
 	/* for now we support only a single range */
@@ -141,10 +144,11 @@ static const struct spm_reg_data spm_reg_8909_cpu = {
 	.spm_cfg = 0x1,
 	.spm_dly = 0x3C102800,
 	.seq = { 0x60, 0x03, 0x60, 0x0B, 0x0F, 0x20, 0x10, 0x80, 0x30, 0x90,
-		0x5B, 0x60, 0x03, 0x60, 0x76, 0x76, 0x0B, 0x94, 0x5B, 0x80,
-		0x10, 0x26, 0x30, 0x0F },
+		0x5B, 0x60, 0x03, 0x60, 0x3B, 0x76, 0x76, 0x0B, 0x94, 0x5B,
+		0x80, 0x10, 0x26, 0x30, 0x0F },
 	.start_index[PM_SLEEP_MODE_STBY] = 0,
 	.start_index[PM_SLEEP_MODE_SPC] = 5,
+	.mode_ctl[PM_SLEEP_MODE_SPC] = SPM_CTL_PC_MODE,
 };
 
 /* SPM register data for 8916 */
@@ -343,8 +347,10 @@ void spm_set_low_power_mode(struct spm_driver_data *drv,
 
 	ctl_val = spm_register_read(drv, SPM_REG_SPM_CTL);
 	ctl_val &= ~(SPM_CTL_INDEX << SPM_CTL_INDEX_SHIFT);
+	ctl_val &= ~(SPM_CTL_PC_MODE | SPM_CTL_SLP_CMD);
 	ctl_val |= start_index << SPM_CTL_INDEX_SHIFT;
 	ctl_val |= SPM_CTL_EN;
+	ctl_val |= drv->reg_data->mode_ctl[mode];
 	spm_register_write_sync(drv, SPM_REG_SPM_CTL, ctl_val);
 }
 
@@ -358,7 +364,6 @@ void qcom_spm_set_l2_mode(enum pm_sleep_mode mode)
 	if (!l2_spm_drv)
 		return;
 
-	//only update the start address index without toggling SPM_EN
 	start_index = l2_spm_drv->reg_data->start_index[mode];
 
 	ctl_val = spm_register_read(l2_spm_drv, SPM_REG_SPM_CTL);
