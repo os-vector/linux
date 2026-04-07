@@ -442,8 +442,6 @@ static const struct qcom_cpufreq_match_data match_data_krait = {
 
 static const struct qcom_cpufreq_match_data match_data_msm8909 = {
 	.get_version = qcom_cpufreq_simple_get_version,
-	.pd_names = (const char *[]) { "perf" },
-	.num_pd_names = 1,
 };
 
 static const struct qcom_cpufreq_match_data match_data_qcs404 = {
