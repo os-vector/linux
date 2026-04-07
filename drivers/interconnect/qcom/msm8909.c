@@ -1187,6 +1187,7 @@ static int msm8909_icc_get_bw(struct icc_node *node, u32 *avg, u32 *peak)
 
 static struct notifier_block msm8909_bimc_cpufreq_nb;
 static struct clk *msm8909_bimc_ddr_clk;
+static u32 msm8909_bimc_cur_khz;
 
 static const struct rpm_clk_resource qpic_clk = {
 	.resource_type = QCOM_SMD_RPM_QPIC_CLK,
@@ -1197,6 +1198,36 @@ static const struct rpm_clk_resource qdss_clk = {
 	.resource_type = QCOM_SMD_RPM_MISC_CLK,
 	.clock_id = 1,
 };
+
+static ssize_t bimc_khz_show(struct device_driver *drv, char *buf)
+{
+	return sysfs_emit(buf, "%u\n", msm8909_bimc_cur_khz);
+}
+
+static ssize_t bimc_khz_store(struct device_driver *drv,
+			      const char *buf, size_t count)
+{
+	u32 khz;
+	unsigned long gcc_hz;
+
+	if (kstrtou32(buf, 10, &khz))
+		return -EINVAL;
+
+	if (khz >= 400000)
+		gcc_hz = 800000000;
+	else
+		gcc_hz = 400000000;
+
+	qcom_icc_rpm_set_bus_rate(&bimc_clk, QCOM_SMD_RPM_ACTIVE_STATE, khz);
+
+	if (msm8909_bimc_ddr_clk)
+		clk_set_rate(msm8909_bimc_ddr_clk, gcc_hz);
+
+	msm8909_bimc_cur_khz = khz;
+	return count;
+}
+
+static DRIVER_ATTR_RW(bimc_khz);
 
 static void msm8909_icc_sync_state(struct device *dev)
 {
@@ -1250,6 +1281,8 @@ static void msm8909_icc_sync_state(struct device *dev)
 #undef SWEN_KEY
 #undef PCCB_KEY
 
+	msm8909_bimc_cur_khz = MSM8909_BIMC_KEEPALIVE_KHZ;
+
 	dev_info(dev, "bus clocks lowered: pcnoc=%u snoc=%u bimc=%u kHz, "
 		 "qpic/qdss/xo-buffers disabled\n",
 		 MSM8909_PCNOC_KEEPALIVE_KHZ, MSM8909_SNOC_KEEPALIVE_KHZ,
@@ -1261,6 +1294,8 @@ static void msm8909_icc_sync_state(struct device *dev)
 
 	cpufreq_register_notifier(&msm8909_bimc_cpufreq_nb,
 				  CPUFREQ_TRANSITION_NOTIFIER);
+
+	driver_create_file(dev->driver, &driver_attr_bimc_khz);
 }
 
 static int msm8909_bimc_cpufreq_cb(struct notifier_block *nb,
@@ -1293,6 +1328,7 @@ static int msm8909_bimc_cpufreq_cb(struct notifier_block *nb,
 	if (msm8909_bimc_ddr_clk)
 		clk_set_rate(msm8909_bimc_ddr_clk, gcc_hz);
 
+	msm8909_bimc_cur_khz = rpm_khz;
 	return NOTIFY_OK;
 }
 
