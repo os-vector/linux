@@ -618,7 +618,7 @@ static int ensure_ta_loaded(struct vkm_ctx *v)
 	qsee_ver = query_feature(v, FEATURE_QSEE_VERSION);
 	whitelist_ver = query_feature(v, FEATURE_ID_WHITELIST);
 	v->whitelist_supported = whitelist_ver >= WHITELIST_MIN_VERSION;
-	pr_info(v->dev, "QSEE version=0x%x whitelist=0x%x (%s)\n",
+	dev_info(v->dev, "QSEE version=0x%x whitelist=0x%x (%s)\n",
 		 qsee_ver, whitelist_ver,
 		 v->whitelist_supported ? "supported" : "absent");
 
@@ -629,7 +629,7 @@ static int ensure_ta_loaded(struct vkm_ctx *v)
 	if (app_id > 0) {
 		v->app_id = app_id;
 		v->ta_loaded = true;
-		pr_info(v->dev, "keymaste already loaded, app_id=%u\n",
+		dev_info(v->dev, "keymaste already loaded, app_id=%u\n",
 			 v->app_id);
 		return 0;
 	}
@@ -983,7 +983,7 @@ static int vkm_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, v);
 	the_ctx = v;
-	dev_info(&pdev->dev, "keymaster thing loaded\n", v->miscdev.name);
+	dev_info(&pdev->dev, "keymaster thing loaded\n");
 	return 0;
 
 err_clk:
