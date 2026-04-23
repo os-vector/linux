@@ -13,5 +13,5 @@ cat /home/kerigan/projects/wire-os/poky/build/tmp-glibc/deploy/images/apq8009-ro
   /home/kerigan/projects/wire-os/poky/build/tmp-glibc/deploy/images/apq8009-robot-robot-perf/lk2nd-zeroes.bin \
   v-out/test.img > v-out/final.img
 
-fastboot flash boot_a v-out/final.img
-fastboot --set-active=a reboot
+fastboot flash boot_b v-out/final.img
+fastboot --set-active=b reboot

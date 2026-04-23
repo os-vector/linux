@@ -145,50 +145,42 @@
 		opp-199999951 {
 			opp-hz = /bits/ 64 <199999951>;
 			opp-microvolt = <1050000>;
-			required-opps = <&rpmpd_opp_ret>;
 			opp-supported-hw = <0xff>;
 		};
 		opp-399999902 {
 			opp-hz = /bits/ 64 <399999902>;
 			opp-microvolt = <1050000>;
-			required-opps = <&rpmpd_opp_svs_soc>;
 			opp-supported-hw = <0xff>;
 		};
 		opp-533333202 {
 			opp-hz = /bits/ 64 <533333202>;
 			opp-microvolt = <1050000>;
-			required-opps = <&rpmpd_opp_nom>;
 			opp-supported-hw = <0xff>;
 		};
 		opp-799999804 {
 			opp-hz = /bits/ 64 <799999804>;
 			opp-microvolt = <1225000>;
-			required-opps = <&rpmpd_opp_nom>;
 			opp-supported-hw = <0xff>;
 		};
 		/* Higher CPU frequencies are generated with the A7PLL */
 		opp-998400000 {
 			opp-hz = /bits/ 64 <998400000>;
 			opp-microvolt = <1350000>;
-			required-opps = <&rpmpd_opp_nom>;
 			opp-supported-hw = <0x5>;
 		};
 		opp-1094400000 {
 			opp-hz = /bits/ 64 <1094400000>;
 			opp-microvolt = <1350000>;
-			required-opps = <&rpmpd_opp_super_turbo>;
 			opp-supported-hw = <0x5>;
 		};
 		opp-1248000000 {
 			opp-hz = /bits/ 64 <1248000000>;
 			opp-microvolt = <1350000>;
-			required-opps = <&rpmpd_opp_super_turbo>;
 			opp-supported-hw = <0x1>;
 		};
 		opp-1267200000 {
 			opp-hz = /bits/ 64 <1267200000>;
 			opp-microvolt = <1350000>;
-			required-opps = <&rpmpd_opp_super_turbo>;
 			opp-supported-hw = <0x1>;
 		};
 	};

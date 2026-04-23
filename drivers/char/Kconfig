@@ -397,4 +397,11 @@ config ADI
 	  and SSM (Silicon Secured Memory).  Intended consumers of this
 	  driver include crash and makedumpfile.
 
+config VECTOR_KEYMASTER
+	tristate "Anki Vector keymaster"
+	depends on ARCH_QCOM && ARM && OF
+	depends on QCOM_SCM
+	help
+	  Driver for the Anki Vector's keymaster and literally nothing else
+
 endmenu
