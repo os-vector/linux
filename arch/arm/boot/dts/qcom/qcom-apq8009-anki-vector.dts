@@ -350,6 +350,12 @@
 	};
 };
 
+/ {
+	vector-keymaster {
+		compatible = "anki,vector-keymaster";
+	};
+};
+
 &camss {
 	status = "okay";
 
