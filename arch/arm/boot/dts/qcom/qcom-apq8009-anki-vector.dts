@@ -175,18 +175,68 @@
 &cpu2_saw { compatible = "qcom,msm8916-saw2-v3.0-cpu", "qcom,saw2"; };
 &cpu3_saw { compatible = "qcom,msm8916-saw2-v3.0-cpu", "qcom,saw2"; };
 
-&l2_saw {
-	l2_saw_vreg: regulator {
-		regulator-name = "vdd-apc";
-		regulator-min-microvolt = <1050000>;
-		regulator-max-microvolt = <1350000>;
+&cpu0 {
+	power-domains = <&cpr>;
+	power-domain-names = "apc";
+};
+&cpu1 {
+	power-domains = <&cpr>;
+	power-domain-names = "apc";
+};
+&cpu2 {
+	power-domains = <&cpr>;
+	power-domain-names = "apc";
+};
+&cpu3 {
+	power-domains = <&cpr>;
+	power-domain-names = "apc";
+};
+
+&cpr {
+	compatible = "qcom,apq8009-vector-cpr", "qcom,cpr";
+	status = "okay";
+	vdd-apc-supply = <&pm8916_spmi_s2>;
+};
+
+&cpu_opp_table {
+	opp-199999951 {
+		required-opps = <&cpr_opp1>;
+	};
+	opp-399999902 {
+		required-opps = <&cpr_opp2>;
+	};
+	opp-533333202 {
+		required-opps = <&cpr_opp2>;
+	};
+	opp-799999804 {
+		required-opps = <&cpr_opp3>;
+	};
+	opp-998400000 {
+		required-opps = <&cpr_opp3>;
+	};
+	opp-1094400000 {
+		required-opps = <&cpr_opp3>;
+	};
+	opp-1248000000 {
+		required-opps = <&cpr_opp3>;
+	};
+	opp-1267200000 {
+		required-opps = <&cpr_opp3>;
 	};
 };
 
-&cpu0 { cpu-supply = <&l2_saw_vreg>; };
-&cpu1 { cpu-supply = <&l2_saw_vreg>; };
-&cpu2 { cpu-supply = <&l2_saw_vreg>; };
-&cpu3 { cpu-supply = <&l2_saw_vreg>; };
+&pm8916_1 {
+	pm8916_spmi_regulators: regulators {
+		compatible = "qcom,pm8916-regulators";
+
+		pm8916_spmi_s2: s2 {
+			regulator-name = "vdd_apc";
+			regulator-min-microvolt = <600000>;
+			regulator-max-microvolt = <1350000>;
+			regulator-always-on;
+		};
+	};
+};
 
 &pm8916_usbin {
 	status = "okay";
