@@ -22,7 +22,9 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/rpmsg.h>
+#include <linux/soc/qcom/smem.h>
 #include <linux/soc/qcom/smem_state.h>
+#include <linux/soc/qcom/socinfo.h>
 #include <linux/soc/qcom/wcnss_ctrl.h>
 #include <net/ipv6.h>
 #include "wcn36xx.h"
@@ -1629,9 +1631,38 @@ static int wcn36xx_probe(struct platform_device *pdev)
 		wcn36xx_err("invalid local-mac-address\n");
 		ret = -EINVAL;
 		goto out_destroy_ept;
-	} else if (addr) {
+	} else if (addr && !(((const u8 *)addr)[0] & 0x02)) {
+		// if not 02:
 		wcn36xx_info("mac address: %pM\n", addr);
 		SET_IEEE80211_PERM_ADDR(wcn->hw, addr);
+	} else {
+		if (addr)
+			wcn36xx_info("deriving mac address from soc serial\n", (const u8 *)addr);
+		struct socinfo *info;
+		size_t info_sz;
+
+		info = qcom_smem_get(QCOM_SMEM_HOST_ANY,
+				     SMEM_HW_SW_BUILD_ID, &info_sz);
+		if (PTR_ERR(info) == -EPROBE_DEFER) {
+			ret = -EPROBE_DEFER;
+			goto out_destroy_ept;
+		}
+		if (!IS_ERR(info) &&
+		    info_sz >= offsetofend(struct socinfo, serial_num)) {
+			u32 serial = __le32_to_cpu(info->serial_num) & 0x00FFFFFF;
+			u32 lower = serial * 4;
+			u8 derived[ETH_ALEN] = {
+				0x00, 0x0a, 0xf5,
+				(lower >> 16) & 0xff,
+				(lower >>  8) & 0xff,
+				(lower >>  0) & 0xff,
+			};
+
+			wcn36xx_info("derived mac address from serial %u: %pM\n", serial, derived);
+			SET_IEEE80211_PERM_ADDR(wcn->hw, derived);
+		} else {
+			wcn36xx_info("mac address derivation fail\n");
+		}
 	}
 
 	ret = wcn36xx_platform_get_resources(wcn, pdev);
