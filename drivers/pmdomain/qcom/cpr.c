@@ -471,7 +471,7 @@ static int cpr_scale(struct cpr_drv *drv, enum voltage_change_dir dir)
 
 	step_uV = regulator_get_linear_step(drv->vdd_apc);
 	if (!step_uV)
-		return -EINVAL;
+		step_uV = 12500;
 
 	corner = drv->corner;
 
@@ -1123,6 +1123,9 @@ static int cpr_corner_init(struct cpr_drv *drv)
 	int step_volt = regulator_get_linear_step(drv->vdd_apc);
 	struct dev_pm_opp *opp;
 
+	if (!step_volt)
+		step_volt = 12500;
+
 	if (fuses && !step_volt)
 		return -EINVAL;
 
@@ -1390,6 +1393,53 @@ static int cpr_find_initial_corner(struct cpr_drv *drv)
 
 	return 0;
 }
+
+// start wire's stupid hacks
+
+static const struct cpr_desc msm8909_cpr_desc = {
+	/* NOTE: This is incomplete, fuse adjustments are not supported yet */
+	.num_fuse_corners = 3,
+	.cpr_fuses = {
+		.fuse_corner_data = (struct fuse_corner_data[]){
+			/* fuse corner 0 */
+			{
+				.max_uV = 850000,
+				.min_uV = 850000,
+			},
+			/* fuse corner 1 */
+			{
+				.max_uV = 950000,
+				.min_uV = 950000,
+			},
+			/* fuse corner 2 */
+			{
+				.max_uV = 1350000,
+				.min_uV = 1162500,
+			},
+		},
+	},
+};
+
+static const struct acc_desc msm8909_acc_desc = {
+	.settings = (const struct reg_sequence[]){
+		{ 0xf000, 0x0 },
+		{ 0xf000, 0x100 },
+		{ 0xf000, 0x101 },
+	},
+	.override_settings = (const struct reg_sequence[]){
+		{ 0xf000, 0x0 },
+		{ 0xf000, 0x100 },
+		{ 0xf000, 0x100 },
+	},
+	.num_regs_per_fuse = 1,
+};
+
+static const struct cpr_acc_desc msm8909_cpr_acc_desc = {
+	.cpr_desc = &msm8909_cpr_desc,
+	.acc_desc = &msm8909_acc_desc,
+};
+
+// end wire's stupid hacks
 
 static const struct cpr_desc msm8916_cpr_desc = {
 	/* NOTE: This is incomplete, fuse adjustments are not supported yet */
@@ -1808,6 +1858,7 @@ static void cpr_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id cpr_match_table[] = {
+	{ .compatible = "qcom,apq8009-vector-cpr", .data = &msm8909_cpr_acc_desc },
 	{ .compatible = "qcom,msm8916-cpr", .data = &msm8916_cpr_acc_desc },
 	{ .compatible = "qcom,qcs404-cpr", .data = &qcs404_cpr_acc_desc },
 	{ }

@@ -495,6 +495,50 @@
 				bits = <2 3>;
 			};
 
+			mem_acc_override: mem-acc-override@6 {
+				reg = <0x06 0x1>;
+				bits = <4 1>;
+			};
+
+			cpr_init_voltage1: init-voltage1@d4 {
+				reg = <0xd4 0x4>;
+				bits = <4 6>;
+			};
+			cpr_init_voltage2: init-voltage2@d2 {
+				reg = <0xd2 0x4>;
+				bits = <2 6>;
+			};
+			cpr_init_voltage3: init-voltage3@d0 {
+				reg = <0xd0 0x4>;
+				bits = <0 6>;
+			};
+			cpr_quotient1: quotient1@d5 {
+				reg = <0xd5 0x4>;
+				bits = <2 12>;
+			};
+			cpr_quotient2: quotient2@d3 {
+				reg = <0xd3 0x4>;
+				bits = <0 12>;
+			};
+			cpr_quotient3: quotient3@d0 {
+				reg = <0xd0 0x4>;
+				bits = <6 12>;
+			};
+			// corners 1 & 2 share the same RO_SEL fuse
+			cpr_ring_osc1: ring-osc1@d7 {
+				reg = <0xd7 0x4>;
+				bits = <5 3>;
+			};
+			cpr_ring_osc2: ring-osc2@d7 {
+				reg = <0xd7 0x4>;
+				bits = <5 3>;
+			};
+			cpr_ring_osc3: ring-osc3@d6 {
+				reg = <0xd6 0x4>;
+				bits = <6 3>;
+			};
+
+
 			tsens_s0_p1: s0-p1@a0 {
 				reg = <0xa0 0x1>;
 				bits = <0 6>;
@@ -1702,6 +1746,58 @@
 		l2_saw: power-manager@b012000 {
 			compatible = "qcom,msm8916-saw2-v3.0-l2", "qcom,saw2";
 			reg = <0x0b012000 0x1000>;
+		};
+
+		cpr: power-controller@b018000 {
+			compatible = "qcom,msm8916-cpr", "qcom,cpr";
+			reg = <0x0b018000 0x1000>;
+			interrupts = <GIC_SPI 15 IRQ_TYPE_EDGE_RISING>;
+			clocks = <&xo_board>;
+			clock-names = "ref";
+			#power-domain-cells = <0>;
+			operating-points-v2 = <&cpr_opp_table>;
+			acc-syscon = <&tcsr>;
+			nvmem-cells = <&mem_acc_override>,
+				      <&cpr_init_voltage1>,
+				      <&cpr_init_voltage2>,
+				      <&cpr_init_voltage3>,
+				      <&cpr_quotient1>,
+				      <&cpr_quotient2>,
+				      <&cpr_quotient3>,
+				      <&cpr_ring_osc1>,
+				      <&cpr_ring_osc2>,
+				      <&cpr_ring_osc3>;
+			nvmem-cell-names = "mem_acc_override",
+					   "cpr_init_voltage1",
+					   "cpr_init_voltage2",
+					   "cpr_init_voltage3",
+					   "cpr_quotient1",
+					   "cpr_quotient2",
+					   "cpr_quotient3",
+					   "cpr_ring_osc1",
+					   "cpr_ring_osc2",
+					   "cpr_ring_osc3";
+
+			qcom,force-ceiling-voltage;
+
+			status = "disabled";
+
+			cpr_opp_table: opp-table {
+				compatible = "operating-points-v2-qcom-level";
+
+				cpr_opp1: opp1 {
+					opp-level = <1>;
+					qcom,opp-fuse-level = <1>;
+				};
+				cpr_opp2: opp2 {
+					opp-level = <2>;
+					qcom,opp-fuse-level = <2>;
+				};
+				cpr_opp3: opp3 {
+					opp-level = <3>;
+					qcom,opp-fuse-level = <3>;
+				};
+			};
 		};
 
 		camss: camss@1b0ac00 {
