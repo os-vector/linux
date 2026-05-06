@@ -91,7 +91,9 @@ enum wcn36xx_ampdu_state {
 	HW_VALUE_CHANNEL(__wcn->hw->conf.chandef.chan->hw_value)
 #define WCN36XX_BAND(__wcn) (__wcn->hw->conf.chandef.chan->band)
 #define WCN36XX_CENTER_FREQ(__wcn) (__wcn->hw->conf.chandef.chan->center_freq)
-#define WCN36XX_LISTEN_INTERVAL(__wcn) (__wcn->hw->conf.listen_interval)
+extern unsigned int wcn36xx_bmps_listen_interval;
+#define WCN36XX_LISTEN_INTERVAL(__wcn) \
+	(max_t(u16, (__wcn)->hw->conf.listen_interval, wcn36xx_bmps_listen_interval))
 #define WCN36XX_FLAGS(__wcn) (__wcn->hw->flags)
 #define WCN36XX_MAX_POWER(__wcn) (__wcn->hw->conf.chandef.chan->max_power)
 

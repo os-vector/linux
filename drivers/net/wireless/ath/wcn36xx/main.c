@@ -35,6 +35,11 @@ unsigned int wcn36xx_dbg_mask;
 module_param_named(debug_mask, wcn36xx_dbg_mask, uint, 0644);
 MODULE_PARM_DESC(debug_mask, "Debugging mask");
 
+unsigned int wcn36xx_bmps_listen_interval = 3;
+module_param_named(bmps_listen_interval, wcn36xx_bmps_listen_interval, uint, 0644);
+MODULE_PARM_DESC(bmps_listen_interval,
+		 "beacon intervals to skip");
+
 #define CHAN2G(_freq, _idx) { \
 	.band = NL80211_BAND_2GHZ, \
 	.center_freq = (_freq), \
