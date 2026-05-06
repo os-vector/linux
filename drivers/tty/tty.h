@@ -76,6 +76,7 @@ void session_clear_tty(struct pid *session);
 void tty_buffer_free_all(struct tty_port *port);
 void tty_buffer_flush(struct tty_struct *tty, struct tty_ldisc *ld);
 void tty_buffer_init(struct tty_port *port);
+void tty_buffer_init_kworker(void);
 void tty_buffer_set_lock_subclass(struct tty_port *port);
 bool tty_buffer_restart_work(struct tty_port *port);
 bool tty_buffer_cancel_work(struct tty_port *port);

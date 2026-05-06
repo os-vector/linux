@@ -5,6 +5,7 @@
 
 #include <linux/types.h>
 #include <linux/errno.h>
+#include <linux/kthread.h>
 #include <linux/minmax.h>
 #include <linux/tty.h>
 #include <linux/tty_buffer.h>
@@ -14,12 +15,16 @@
 #include <linux/string.h>
 #include <linux/slab.h>
 #include <linux/sched.h>
+#include <linux/sched/prio.h>
 #include <linux/wait.h>
 #include <linux/bitops.h>
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/ratelimit.h>
 #include "tty.h"
+
+// use a SCHED_FIFO kthread for tty
+static struct kthread_worker *tty_flip_worker;
 
 #define MIN_TTYB_SIZE	256
 #define TTYB_ALIGN_MASK	0xff
@@ -61,8 +66,12 @@ EXPORT_SYMBOL_GPL(tty_buffer_lock_exclusive);
 
 static bool tty_buffer_queue_work(struct tty_bufhead *buf)
 {
-	struct workqueue_struct *flip_wq = READ_ONCE(buf->flip_wq);
+	struct workqueue_struct *flip_wq;
 
+	if (tty_flip_worker)
+		return kthread_queue_work(tty_flip_worker, &buf->kwork);
+
+	flip_wq = READ_ONCE(buf->flip_wq);
 	return queue_work(flip_wq ?: system_dfl_wq, &buf->work);
 }
 
@@ -466,9 +475,8 @@ receive_buf(struct tty_port *port, struct tty_buffer *head, size_t count)
  *
  * Locking: takes buffer lock to ensure single-threaded flip buffer 'consumer'.
  */
-static void flush_to_ldisc(struct work_struct *work)
+static void __flush_to_ldisc(struct tty_port *port)
 {
-	struct tty_port *port = container_of(work, struct tty_port, buf.work);
 	struct tty_bufhead *buf = &port->buf;
 
 	mutex_lock(&buf->lock);
@@ -511,6 +519,20 @@ static void flush_to_ldisc(struct work_struct *work)
 
 	mutex_unlock(&buf->lock);
 
+}
+
+static void flush_to_ldisc(struct work_struct *work)
+{
+	struct tty_port *port = container_of(work, struct tty_port, buf.work);
+
+	__flush_to_ldisc(port);
+}
+
+static void flush_to_ldisc_kwork(struct kthread_work *work)
+{
+	struct tty_port *port = container_of(work, struct tty_port, buf.kwork);
+
+	__flush_to_ldisc(port);
 }
 
 static inline void tty_flip_buffer_commit(struct tty_buffer *tail)
@@ -591,7 +613,25 @@ void tty_buffer_init(struct tty_port *port)
 	atomic_set(&buf->mem_used, 0);
 	atomic_set(&buf->priority, 0);
 	INIT_WORK(&buf->work, flush_to_ldisc);
+	kthread_init_work(&buf->kwork, flush_to_ldisc_kwork);
 	buf->mem_limit = TTYB_DEFAULT_MEM_LIMIT;
+}
+
+void tty_buffer_init_kworker(void)
+{
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO / 2 };
+	struct kthread_worker *worker;
+
+	worker = kthread_create_worker(0, "tty-flip");
+	if (IS_ERR(worker)) {
+		pr_err("tty: failed to create kthread %ld\n", PTR_ERR(worker));
+		return;
+	}
+
+	if (sched_setscheduler(worker->task, SCHED_FIFO, &param))
+		pr_warn("tty: could not set SCHED_FIFO on kthread\n");
+
+	tty_flip_worker = worker;
 }
 
 /**
@@ -625,10 +665,15 @@ bool tty_buffer_restart_work(struct tty_port *port)
 
 bool tty_buffer_cancel_work(struct tty_port *port)
 {
-	return cancel_work_sync(&port->buf.work);
+	bool ret = cancel_work_sync(&port->buf.work);
+
+	if (tty_flip_worker)
+		ret |= kthread_cancel_work_sync(&port->buf.kwork);
+	return ret;
 }
 
 void tty_buffer_flush_work(struct tty_port *port)
 {
 	flush_work(&port->buf.work);
+	kthread_flush_work(&port->buf.kwork);
 }

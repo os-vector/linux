@@ -3,6 +3,7 @@
 #define _LINUX_TTY_BUFFER_H
 
 #include <linux/atomic.h>
+#include <linux/kthread.h>
 #include <linux/llist.h>
 #include <linux/mutex.h>
 #include <linux/workqueue.h>
@@ -36,6 +37,7 @@ struct tty_bufhead {
 	struct tty_buffer *head;	/* Queue head */
 	struct workqueue_struct *flip_wq;
 	struct work_struct work;
+	struct kthread_work kwork;
 	struct mutex	   lock;
 	atomic_t	   priority;
 	struct tty_buffer sentinel;

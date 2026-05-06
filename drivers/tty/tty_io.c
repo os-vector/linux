@@ -3648,6 +3648,7 @@ static const struct ctl_table tty_table[] = {
  */
 int __init tty_init(void)
 {
+	tty_buffer_init_kworker();
 	register_sysctl_init("dev/tty", tty_table);
 	cdev_init(&tty_cdev, &tty_fops);
 	if (cdev_add(&tty_cdev, MKDEV(TTYAUX_MAJOR, 0), 1) ||
