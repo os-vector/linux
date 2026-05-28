@@ -1404,13 +1404,13 @@ static const struct cpr_desc msm8909_cpr_desc = {
 		.fuse_corner_data = (struct fuse_corner_data[]){
 			/* fuse corner 0 */
 			{
-				.max_uV = 850000,
-				.min_uV = 850000,
+				.max_uV = 950000,
+				.min_uV = 950000,
 			},
 			/* fuse corner 1 */
 			{
-				.max_uV = 950000,
-				.min_uV = 950000,
+				.max_uV = 1050000,
+				.min_uV = 1050000,
 			},
 			/* fuse corner 2 */
 			{
